@@ -1,9 +1,9 @@
-# Name:
-# OSU Email:
+# Name: Sterling Violette
 # Course: CS261 - Data Structures
-# Assignment:
-# Due Date:
-# Description:
+# Assignment: Assignment 6
+# Description: Methods for altering a HashMap class that
+# uses quadratic probing. Methods include remove, put, get and
+# others including iter and next methods
 
 from a6_include import (DynamicArray, DynamicArrayException, HashEntry,
                         hash_function_1, hash_function_2)
@@ -14,7 +14,6 @@ class HashMap:
         """
         Initialize new HashMap that uses
         quadratic probing for collision resolution
-        DO NOT CHANGE THIS METHOD IN ANY WAY
         """
         self._buckets = DynamicArray()
 
@@ -29,7 +28,6 @@ class HashMap:
     def __str__(self) -> str:
         """
         Override string method to provide more readable output
-        DO NOT CHANGE THIS METHOD IN ANY WAY
         """
         out = ''
         for i in range(self._buckets.length()):
@@ -39,7 +37,6 @@ class HashMap:
     def _next_prime(self, capacity: int) -> int:
         """
         Increment from given number to find the closest prime number
-        DO NOT CHANGE THIS METHOD IN ANY WAY
         """
         if capacity % 2 == 0:
             capacity += 1
@@ -53,7 +50,6 @@ class HashMap:
     def _is_prime(capacity: int) -> bool:
         """
         Determine if given integer is a prime number and return boolean
-        DO NOT CHANGE THIS METHOD IN ANY WAY
         """
         if capacity == 2 or capacity == 3:
             return True
@@ -72,14 +68,12 @@ class HashMap:
     def get_size(self) -> int:
         """
         Return size of map
-        DO NOT CHANGE THIS METHOD IN ANY WAY
         """
         return self._size
 
     def get_capacity(self) -> int:
         """
         Return capacity of map
-        DO NOT CHANGE THIS METHOD IN ANY WAY
         """
         return self._capacity
 
@@ -87,69 +81,222 @@ class HashMap:
 
     def put(self, key: str, value: object) -> None:
         """
-        TODO: Write this implementation
+        Takes a key argument as a string and a value and an object argument
+        and inserts or updates the key-value pair in the hash map.
         """
-        pass
+
+        if self.table_load() >= 0.5:
+            self.resize_table(self._capacity * 2)
+
+        quadratic_probe = 0
+        hash_func_key = self._hash_function(key)
+        bucket = hash_func_key % self._capacity
+        initial_bucket = bucket
+
+        while True:
+            target = self._buckets[bucket]
+            #if empty or tombstone is found store the key and value
+
+            if target is None or target.is_tombstone:
+                self._buckets[bucket] = HashEntry(key, value)
+                self._size += 1
+                break
+
+            #if exists update value
+            elif target.key == key:
+                self._buckets[bucket].value = value
+                break
+
+            #increment quadratic_probe and calculate next bucket
+            quadratic_probe += 1
+            bucket = (initial_bucket + quadratic_probe ** 2) % self._capacity
+        
 
     def table_load(self) -> float:
         """
-        TODO: Write this implementation
+        Takes no arguments but calculates and returns the table load.
         """
-        pass
+        return self._size / self._capacity
 
     def empty_buckets(self) -> int:
         """
-        TODO: Write this implementation
+        This method takes no arguments but calculates and
+        returns the number of empty buckets in the hash map.
         """
-        pass
+        empty_bucket = 0
+        length = self._buckets.length()
+        #iterate through all buckets in DA
+        for index in range(length):
+            if self._buckets[index] is None or self._buckets[index].is_tombstone:
+                empty_bucket += 1
+
+        return empty_bucket
 
     def resize_table(self, new_capacity: int) -> None:
         """
-        TODO: Write this implementation
+        Takes a new capacity in as an integer argument and
+        resizes the hash map by creating a new DA with the
+        specified new_capacity. It then and inserts into the new DA.
         """
-        pass
+        if new_capacity >= self._size:
+
+            new_buckets = DynamicArray()
+            new_capacity = self._next_prime(new_capacity)
+
+            #new DynamicArray with None values
+            for bogus_index in range(new_capacity):
+                new_buckets.append(None)
+
+            #update to new values
+            old_buckets = self._buckets
+            self._size = 0
+            self._buckets = new_buckets
+            self._capacity = new_capacity
+
+            #iterate through all the buckets in old_buckets
+            length = old_buckets.length()
+            for index in range(length):
+                item = old_buckets[index]
+
+                if item is not None and not item.is_tombstone:
+                    #use put method to add
+                    self.put(item.key, item.value)
 
     def get(self, key: str) -> object:
         """
-        TODO: Write this implementation
+        Takes a key in as a str argument then retrieves the value
+        associated with the given key in the hash map. It uses quadratic probing
+        to search for the key in case of collisions. If the key is found it
+        returns the object otherwise it returns none
         """
-        pass
+        #define
+        hash_func_key = self._hash_function(key)
+        bucket = hash_func_key % self._capacity
+        initial_bucket = bucket
+        quadratic_probe = 0
+
+        while True:
+            target = self._buckets[bucket]
+
+            #if none, we know it dosent exist exit
+            if target is None:
+                return None
+            #matches key and not tomb, we got it
+            elif target.key == key and not target.is_tombstone:
+                return target.value
+
+            #continue quadratic probing
+            quadratic_probe += 1
+            capacity = self._capacity
+            bucket = (initial_bucket + quadratic_probe ** 2) % capacity
 
     def contains_key(self, key: str) -> bool:
         """
-        TODO: Write this implementation
+        Takes in a key as a str argument, then checks if the
+        hash map contains the given key. It uses quadratic probing
+        to search for the key in case of collisions. If the key
+        is found, it returns true else false
         """
-        pass
+        #define
+        hash_func_key = self._hash_function(key)
+        bucket = hash_func_key % self._capacity
+        initial_bucket = bucket
+        quadratic_probe = 0
+
+        while True:
+            target = self._buckets[bucket]
+
+            #if is none, exit
+            if target is None:
+                return False
+
+            #we found it
+            elif target.key is key and not target.is_tombstone:
+                return True
+
+            #continue looking via probing
+            quadratic_probe += 1
+            bucket = (initial_bucket + quadratic_probe ** 2) % self._capacity
 
     def remove(self, key: str) -> None:
         """
-        TODO: Write this implementation
+        Takes in a key as a str argument and removes a key value
+        pair from the hash map. If the key is found it marks the entry as
+        a tombstone and decrements the size of the hash map.
         """
-        pass
+        #define
+        hash_func_key = self._hash_function(key)
+        bucket = hash_func_key % self._capacity
+        initial_bucket = bucket
+        quadratic_probe = 0
+
+        while True:
+            target = self._buckets[bucket]
+
+            #does not exist, exit
+            if target is None:
+                break
+
+            #exists
+            elif target.key == key and not target.is_tombstone:
+                target.is_tombstone = True
+                self._size -= 1
+                break
+
+            #continue
+            quadratic_probe += 1
+            bucket = (initial_bucket + quadratic_probe ** 2) % self._capacity
 
     def clear(self) -> None:
         """
-        TODO: Write this implementation
+        Takes in no arguments but clears the entire hash
+        map by setting all the entries in the DA to None.
         """
-        pass
+        clear = None
+        length = self._buckets.length()
+        for index in range(length):
+            self._buckets[index] = clear
+        self._size = 0
 
     def get_keys_and_values(self) -> DynamicArray:
         """
-        TODO: Write this implementation
+        Takes no arguments in but creates a new DA containing
+        all non tombstone key-value pairs. It iterates through all
+        the buckets in the hash map and appends the (key, value) tuple.
         """
-        pass
+        keys_and_values = DynamicArray()
+
+        for bucket in range(self._capacity):
+            target = self._buckets[bucket]
+            if target is not None and not target.is_tombstone:
+                keys_and_values.append((target.key, target.value))
+
+        return keys_and_values
 
     def __iter__(self):
         """
-        TODO: Write this implementation
+        Takes no arguments and initializes the iterator for the HashMap class.
+        It sets the initial index to 0 and returns the iterator
         """
-        pass
+        self.index = 0
+        iterator = self
+        return iterator
 
     def __next__(self):
         """
-        TODO: Write this implementation
+        Takes no arguments but is called during the iteration of hash map.
+        It finds the next non empty and non tombstone entry in the hash map.
         """
-        pass
+        try:
+            item = None
+            while item is None or item.is_tombstone is True:
+                item = self._buckets.get_at_index(self.index)
+                self.index += 1
+
+        except DynamicArrayException:
+            raise StopIteration
+
+        return item
 
 
 # ------------------- BASIC TESTING ---------------------------------------- #
